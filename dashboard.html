@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Dashboard – The Podium</title><link rel="icon" href="logo.png"><link rel="stylesheet" href="style.css"></head>
+<body><div class="bar"><a href="index.html">Form</a><a class="on" href="dashboard.html">Dashboard</a><button id="lo">Logout</button></div>
+<div class="sheet wide" id="app" hidden>
+<h1>APPLICATIONS DASHBOARD</h1>
+<div class="stats" id="stats"></div>
+<div class="tools"><input id="q" type="text" placeholder="Search name, class, section…"><select id="fs"><option value="">All Status</option><option>Pending</option><option>Shortlisted</option><option>Accepted</option><option>Rejected</option></select><button class="sm" id="csv">Download Excel (CSV)</button></div>
+<div class="tw"><table><thead><tr><th>#</th><th>Date</th><th>Name</th><th>Class</th><th>Section</th><th>Area</th><th>Status</th></tr></thead><tbody id="tb"></tbody></table></div>
+<p id="empty" class="msg" hidden>No applications found.</p></div>
+<div id="m" class="modal" hidden></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="config.js"></script>
+<script>
+let rows=[];const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('lo').onclick=async()=>{await sb.auth.signOut();location.href='login.html'};
+(async()=>{if(!(await isOwner())){location.href='login.html';return}$('app').hidden=false;await load()})();
+async function load(){const {data,error}=await sb.from('applications').select('*').order('created_at',{ascending:false});if(error){alert('Error: '+error.message);return}rows=data;draw()}
+function draw(){
+ const t=$('q').value.toLowerCase(),s=$('fs').value;
+ const c=k=>rows.filter(r=>r.status===k).length;
+ $('stats').innerHTML=`<div><b>${rows.length}</b>Total</div><div><b>${c('Pending')}</b>Pending</div><div><b>${c('Shortlisted')}</b>Shortlisted</div><div><b>${c('Accepted')}</b>Accepted</div><div><b>${c('Rejected')}</b>Rejected</div>`;
+ const v=rows.filter(r=>(!s||r.status===s)&&(!t||[r.name,r.cls,r.section,r.area].join(' ').toLowerCase().includes(t)));
+ $('empty').hidden=v.length>0;
+ $('tb').innerHTML=v.map((r,i)=>`<tr class="r" onclick="openM('${r.id}')"><td>${i+1}</td><td>${new Date(r.created_at).toLocaleDateString()}</td><td>${esc(r.name)}</td><td>${esc(r.cls)}</td><td>${esc(r.section)}</td><td>${esc(r.area)}</td><td><span class="b ${esc(r.status)}">${esc(r.status)}</span></td></tr>`).join('')}
+$('q').oninput=draw;$('fs').onchange=draw;
+function openM(id){const r=rows.find(x=>x.id===id);const p=(l,v)=>`<p><b>${l}</b>${esc(v)||'—'}</p>`;
+ $('m').hidden=false;$('m').innerHTML=`<div class="card"><h3>${esc(r.name)}</h3>${p('Class / Section',r.cls+' / '+r.section)}${p('Areas of Interest',r.interests)}${p('Why It Appeals',r.why)}${p('Previous Experience',r.experience)}${p('Experience Details',r.exp_details)}${p('Motivation',r.motivation)}${p('Most Interesting Area',r.area)}${p('Describe Yourself',r.describe)}${p('Submitted',new Date(r.created_at).toLocaleString())}
+ <div class="e"><b>FOR OFFICE USE ONLY</b><select id="s">${['Pending','Shortlisted','Accepted','Rejected'].map(x=>`<option ${x===r.status?'selected':''}>${x}</option>`).join('')}</select><textarea id="rm" placeholder="Remarks">${esc(r.remarks)}</textarea><input id="rb" placeholder="Reviewed By" value="${esc(r.reviewed_by)}"><input id="rd" type="date" value="${esc(r.review_date)}">
+ <div><button class="sm" onclick="save('${r.id}')">Save</button> <button class="sm" style="background:#777" onclick="$('m').hidden=true">Close</button> <button class="sm" style="background:#b00020" onclick="del('${r.id}')">Delete</button></div></div></div>`}
+async function save(id){const {error}=await sb.from('applications').update({status:$('s').value,remarks:$('rm').value,reviewed_by:$('rb').value,review_date:$('rd').value}).eq('id',id);if(error){alert(error.message);return}$('m').hidden=true;load()}
+async function del(id){if(!confirm('Delete this application permanently?'))return;const {error}=await sb.from('applications').delete().eq('id',id);if(error){alert(error.message);return}$('m').hidden=true;load()}
+$('csv').onclick=()=>{const h=['created_at','name','cls','section','interests','why','experience','exp_details','motivation','area','describe','status','remarks','reviewed_by','review_date'];
+ const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+ const b=new Blob(['\ufeff'+[h.join(',')].concat(rows.map(r=>h.map(k=>q(r[k])).join(','))).join('\n')],{type:'text/csv'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='podium-applications.csv';a.click()};
+</script></body></html>

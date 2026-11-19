@@ -1,0 +1,17 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Owner Login – The Podium</title><link rel="icon" href="logo.png"><link rel="stylesheet" href="style.css"></head>
+<body><form class="sheet login" id="f">
+<div class="head"><img src="logo.png" alt="The Podium" style="max-width:230px"></div>
+<h1 style="font-size:26px">OWNER LOGIN</h1>
+<div style="margin-top:18px;font-size:18px">Email<input type="text" id="em" required style="width:100%"></div>
+<div style="font-size:18px">Password<input type="password" id="pw" required style="width:100%"></div>
+<div class="submit" style="margin-top:6px"><button id="btn">Login</button></div><div class="msg err" id="msg"></div>
+<p class="foot"><a href="index.html">← Back to Form</a></p></form>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="config.js"></script>
+<script>
+isOwner().then(ok=>{if(ok)location.href='dashboard.html'});
+f.onsubmit=async e=>{e.preventDefault();msg.textContent='';btn.disabled=true;
+ const {error}=await sb.auth.signInWithPassword({email:em.value.trim(),password:pw.value});
+ if(error){msg.textContent='Wrong email or password.';btn.disabled=false;return}
+ if(!(await isOwner())){await sb.auth.signOut();msg.textContent='This account is not an owner.';btn.disabled=false;return}
+ location.href='dashboard.html'};
+</script></body></html>
