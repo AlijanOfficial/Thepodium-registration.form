@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The Podium – Membership Application Form</title>
 <link rel="icon" href="logo.png">
+<script src="https://jsdelivr.net"></script>
 <style>
 :root{--ink:#0b0b0f;--line:#222}
 *{box-sizing:border-box}
@@ -108,16 +109,16 @@ button:disabled{opacity:.5}
 </form>
 
 <script>
-// 👇 Apps Script Web App URL yahan paste karein
-const SCRIPT_URL = "PASTE_YOUR_APPS_SCRIPT_URL_HERE";
+const SUPABASE_URL = "https://ephhlgpgodpveywwmidl.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_iAe7y1E8jaBPf_sDbs1eig_gmrK5x2D";
+
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const f = document.getElementById('f'), msg = document.getElementById('msg'), btn = document.getElementById('btn');
 
-// Yes/No me sirf ek select ho
 document.querySelectorAll('[data-single] input[type=checkbox]').forEach(c =>
   c.addEventListener('change', () => { if (c.checked) c.closest('[data-single]').querySelectorAll('input[type=checkbox]').forEach(o => { if (o !== c) o.checked = false; }); }));
 
-// "Other" text likhne par checkbox auto-tick
 document.querySelectorAll('[data-other]').forEach(t =>
   t.addEventListener('input', () => { t.closest('label').querySelector('input[type=checkbox]').checked = !!t.value.trim(); }));
 
@@ -132,22 +133,38 @@ function group(name) {
   return out.join(', ');
 }
 
-f.addEventListener('submit', async e => {
+f.addEventListener('submit', async (e) => {
   e.preventDefault();
-  if (f.website.value) return; // spam trap
-  const data = {
-    name: f.name.value.trim(), cls: f.cls.value.trim(), section: f.section.value.trim(),
-    interests: group('interests'), why: f.why.value.trim(),
-    experience: group('experience'), expDetails: f.expDetails.value.trim(),
-    motivation: group('motivation'), area: group('area'), describe: f.describe.value.trim()
+  if (f.website.value) return;
+
+  btn.disabled = true;
+  msg.textContent = "Submitting application...";
+  msg.className = "msg";
+
+  const payload = {
+    name: f.name.value.trim(),
+    cls: f.cls.value.trim(),
+    section: f.section.value.trim(),
+    interests: group('interests'),
+    why: f.why.value.trim(),
+    experience: group('experience'),
+    exp_details: f.expDetails.value.trim(),
+    motivation: group('motivation'),
+    area: group('area'),
+    describe: f.describe.value.trim(),
+    status: "Pending"
   };
-  btn.disabled = true; msg.className = 'msg'; msg.textContent = 'Submitting…';
-  try {
-    await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(data) });
-    msg.className = 'msg ok'; msg.textContent = '✓ Thank you! Your application has been submitted.';
+
+  const { error } = await db.from('applications').insert([payload]);
+
+  if (error) {
+    console.error(error);
+    msg.textContent = "Error: " + error.message;
+    msg.className = "msg err";
+  } else {
+    msg.textContent = "Application submitted successfully!";
+    msg.className = "msg ok";
     f.reset();
-  } catch (err) {
-    msg.className = 'msg err'; msg.textContent = 'Something went wrong. Please try again.';
   }
   btn.disabled = false;
 });
