@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Podium – Membership Application Form</title>
+<link rel="icon" href="logo.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="bar" id="bar" hidden><a class="on" href="index.html">Form</a><a href="dashboard.html">Dashboard</a><button id="lo">Logout</button></div>
+<form class="sheet" id="f" autocomplete="off">
+  <div class="head"><img src="header.png" alt="The Podium Public Speaking Club – Stand to Speak. Rise to Lead."></div>
+  <h1>MEMBERSHIP APPLICATION FORM</h1>
+
+  <h2>1. Personal Information</h2>
+  <div class="row"><div class="f"><label>Full Name:</label><input type="text" name="name" required></div></div>
+  <div class="row">
+    <div class="f"><label>Class:</label><input type="text" name="cls" required></div>
+    <div class="f"><label>Section:</label><input type="text" name="section" required></div>
+  </div>
+
+  <h2>2. Areas of Interest</h2>
+  <p class="sub">Which areas of public speaking attracts you the most?</p>
+  <div class="opts" data-group="interests">
+    <label><input type="checkbox" value="Impromptu Speaking"> Impromptu Speaking</label>
+    <label><input type="checkbox" value="Debates"> Debates</label>
+    <label><input type="checkbox" value="Speech Competitions"> Speech Competitions</label>
+    <label class="other"><input type="checkbox" value="Other"> Other: <input type="text" data-other></label>
+  </div>
+
+  <h2>3. Why It Appeals to You?</h2>
+  <p class="sub">Please tell us why this area of public speaking interests you the most.</p>
+  <textarea name="why" rows="3"></textarea>
+
+  <h2>4. Previous Experience (Optional)</h2>
+  <p class="q" style="max-width:560px">Do you have any prior experience in public speaking, event management, media, or any relevant field?</p>
+  <div class="opts yn" data-group="experience" data-single>
+    <label><input type="checkbox" value="Yes"> Yes</label>
+    <label><input type="checkbox" value="No"> No</label>
+  </div>
+  <p class="q">If yes, please mention (e.g. competitions, achievements, positions):</p>
+  <textarea name="expDetails" rows="2"></textarea>
+
+  <h2>5. Quick Questions</h2>
+  <p class="q">1. &nbsp;What motivates you to join <i>The Podium?</i></p>
+  <div class="opts" data-group="motivation">
+    <label><input type="checkbox" value="Learn & Improve"> Learn &amp; Improve</label>
+    <label><input type="checkbox" value="Contribute to the Club"> Contribute to the Club</label>
+    <label><input type="checkbox" value="Explore Opportunities"> Explore Opportunities</label>
+    <label class="other"><input type="checkbox" value="Other"> Other: <input type="text" data-other></label>
+  </div>
+  <p class="q">2. &nbsp;Which area interests you the most? <small>(from the options above)</small></p>
+  <div class="opts" data-group="area">
+    <label><input type="checkbox" value="Impromptu Speaking"> Impromptu Speaking</label>
+    <label><input type="checkbox" value="Debates"> Debates</label>
+    <label><input type="checkbox" value="Speech Competitions"> Speech Competitions</label>
+    <label class="other"><input type="checkbox" value="Other"> Other: <input type="text" data-other></label>
+  </div>
+  <p class="q">3. &nbsp;How would you describe yourself?</p>
+  <textarea name="describe" rows="2"></textarea>
+
+  <div class="office" id="office" hidden>
+    <span class="tag">FOR OFFICE USE ONLY</span>
+    <div class="ln st"><b>Status:</b><span><em></em>Shortlisted</span><span><em></em>Accepted</span><span><em></em>Rejected</span></div>
+    <div class="ln"><b>Remarks:</b><i></i></div>
+    <div class="ln"><b>Reviewed By:</b><i></i></div>
+    <div class="ln"><b>Date:</b><i></i></div>
+  </div>
+
+  <input class="hp" type="text" name="website" tabindex="-1" aria-hidden="true">
+  <div class="submit"><button type="submit" id="btn">Submit Application</button></div>
+  <div class="msg" id="msg"></div>
+</form>
+<p class="foot" style="margin-top:18px;font-size:15px;color:#444">Editor: <b>Ali Jan</b> &nbsp;|&nbsp; <a href="mailto:alioutstanding1@gmail.com" style="color:#444">alioutstanding1@gmail.com</a></p>
+<p class="foot" style="margin-top:6px"><a href="login.html">Owner Login</a></p>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script>
+const f=document.getElementById('f'),msg=document.getElementById('msg'),btn=document.getElementById('btn');
+isOwner().then(ok=>{if(ok){document.getElementById('office').hidden=false;document.getElementById('bar').hidden=false;
+ document.getElementById('lo').onclick=async()=>{await sb.auth.signOut();location.href='login.html'}}});
+document.querySelectorAll('[data-single] input[type=checkbox]').forEach(c=>c.addEventListener('change',()=>{if(c.checked)c.closest('[data-single]').querySelectorAll('input[type=checkbox]').forEach(o=>{if(o!==c)o.checked=false})}));
+document.querySelectorAll('[data-other]').forEach(t=>t.addEventListener('input',()=>{t.closest('label').querySelector('input[type=checkbox]').checked=!!t.value.trim()}));
+function group(n){const out=[];document.querySelector('[data-group="'+n+'"]').querySelectorAll('label').forEach(l=>{const cb=l.querySelector('input[type=checkbox]');if(!cb.checked)return;const o=l.querySelector('[data-other]');out.push(o?'Other: '+o.value.trim():cb.value)});return out.join(', ')}
+f.addEventListener('submit',async e=>{e.preventDefault();if(f.website.value)return;
+ const row={name:f.name.value.trim(),cls:f.cls.value.trim(),section:f.section.value.trim(),interests:group('interests'),why:f.why.value.trim(),experience:group('experience'),exp_details:f.expDetails.value.trim(),motivation:group('motivation'),area:group('area'),describe:f.describe.value.trim()};
+ btn.disabled=true;msg.className='msg';msg.textContent='Submitting…';
+ const {error}=await sb.from('applications').insert(row);
+ if(error){msg.className='msg err';msg.textContent='Something went wrong. Please try again.';console.error(error)}
+ else{msg.className='msg ok';msg.textContent='✓ Thank you! Your application has been submitted.';f.reset()}
+ btn.disabled=false});
+</script>
+</body>
+</html>
